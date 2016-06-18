@@ -53,7 +53,7 @@ extension FixerRequest {
 // MARK: - Types -
 // MARK: Response
 
-enum FixerReponse<T> : ErrorType {
+enum FixerReponse<T> {
     case Result(T)
     case Error(FixerReponseError)
 }
@@ -166,17 +166,17 @@ class FixerService {
                     }
                     
                     guard let data = data else {
-                        throw Response.Error(.UnknownError)
+                        throw FixerReponseError.UnknownError
                     }
                     
                     let json = try NSJSONSerialization.JSONObjectWithData(data, options: [])
                     
                     guard let jsonObject = json as? NSJSONObject else {
-                        throw Response.Error(.InvalidJSON)
+                        throw FixerReponseError.InvalidJSON
                     }
                     
                     guard let result = R.Result(json: jsonObject) else {
-                        throw Response.Error(.DecodingError)
+                        throw FixerReponseError.DecodingError
                     }
                     
                     dispatch_async(mainQueue) {
@@ -195,10 +195,10 @@ class FixerService {
                         completionHandler(response: .Error(.InvalidJSON))
                     }
                     
-                } catch let error as Response {
+                } catch let error as FixerReponseError {
                     
                     dispatch_async(mainQueue) {
-                        completionHandler(response: error)
+                        completionHandler(response: .Error(error))
                     }
                     
                 } catch {
