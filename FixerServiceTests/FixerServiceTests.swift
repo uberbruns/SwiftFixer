@@ -35,7 +35,6 @@ class FixerServiceTests: XCTestCase {
     }
 
     
-    
     func testHistorical() {
         
         let expectation = self.expectationWithDescription("Receive Latest Rates")

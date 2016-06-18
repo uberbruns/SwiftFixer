@@ -55,6 +55,11 @@ extension FixerRequest {
 
 enum FixerReponse<T> : ErrorType {
     case Result(T)
+    case Error(FixerReponseError)
+}
+
+
+enum FixerReponseError : ErrorType {
     case InvalidRequest
     case InvalidJSON
     case DecodingError
@@ -142,7 +147,7 @@ class FixerService {
     func runRequest<R: FixerRequest>(request: R, completionHandler: (response: FixerReponse<R.Result>) -> Void) {
         
         guard let urlRequest = request.urlRequest else {
-            completionHandler(response: .InvalidRequest)
+            completionHandler(response: .Error(.InvalidRequest))
             return
         }
         
@@ -161,17 +166,17 @@ class FixerService {
                     }
                     
                     guard let data = data else {
-                        throw Response.UnknownError
+                        throw Response.Error(.UnknownError)
                     }
                     
                     let json = try NSJSONSerialization.JSONObjectWithData(data, options: [])
                     
                     guard let jsonObject = json as? NSJSONObject else {
-                        throw Response.InvalidJSON
+                        throw Response.Error(.InvalidJSON)
                     }
                     
                     guard let result = R.Result(json: jsonObject) else {
-                        throw Response.DecodingError
+                        throw Response.Error(.DecodingError)
                     }
                     
                     dispatch_async(mainQueue) {
@@ -181,13 +186,13 @@ class FixerService {
                 } catch let error as NSError where error.code == Int(CFNetworkErrors.CFURLErrorNotConnectedToInternet.rawValue) {
                     
                     dispatch_async(mainQueue) {
-                        completionHandler(response: .NoInternet)
+                        completionHandler(response: .Error(.NoInternet))
                     }
                     
                 } catch let error as NSError where error.domain == NSCocoaErrorDomain && error.code == 3840 {
                     
                     dispatch_async(mainQueue) {
-                        completionHandler(response: .InvalidJSON)
+                        completionHandler(response: .Error(.InvalidJSON))
                     }
                     
                 } catch let error as Response {
@@ -199,14 +204,10 @@ class FixerService {
                 } catch {
                     
                     dispatch_async(mainQueue) {
-                        completionHandler(response: .UnknownError)
+                        completionHandler(response: .Error(.UnknownError))
                     }
-                    
                 }
-                
             }
-            
-            
         }
         
         task.resume()
